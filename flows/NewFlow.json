@@ -1,0 +1,167 @@
+{
+	"schemaVersion": "4",
+	"info": {
+		"name": "tester",
+		"description": ""
+	},
+	"parameter": {
+		"properties": {
+			"request": {
+				"description": "The request"
+			},
+			"config": {
+				"type": "object",
+				"description": "The service's configuration"
+			},
+			"env": {
+				"type": "object",
+				"description": "The host OS environment"
+			}
+		},
+		"additionalProperties": false
+	},
+	"start": "invoke-flow.1",
+	"nodes": {
+		"javascript.2": {
+			"type": "nodehandler://@axway/api-builder-plugin-fn-javascript/javascript",
+			"name": "prepareGetContacts",
+			"method": "Execute",
+			"parameters": [
+				{
+					"name": "data",
+					"type": "jsonpath",
+					"value": "$",
+					"metaName": "Data",
+					"metaDescription": "The value to apply as the `data` argument of the JavaScript code. For objects and arrays, `data` is passed by reference."
+				},
+				{
+					"name": "code",
+					"type": "string",
+					"value": "\"let url = `https://${data.env.SFDC_DOMAIN_NAME}.my.salesforce.com/services/data/v53.0/query?q=SELECT Id,FirstName,LastName FROM Contact`;\\n  \\n  \\t/*\\n\\tlet headers = {\\n\\t\\t'Authorization': `Bearer ${data.getSFDCAcessTokenFlowResponse}`\\n\\t};\\n    */\\n\\n\\treturn {url};\"",
+					"metaName": "Code",
+					"metaDescription": "A JavaScript function body. Supports `await` and returning promises. `data` is the value of the Data parameter. `logger` is the API Builder logger. See the docs for more info: https://docs.axway.com/bundle/api-builder/page/docs/developer_guide/flows/flow_nodes/javascript_flow_node/index.html"
+				}
+			],
+			"outputs": {
+				"next": {
+					"context": "$.prepareGetContactsResult",
+					"routes": [
+						"rest.2"
+					],
+					"metaName": "Next"
+				},
+				"error": {
+					"context": "$.error",
+					"routes": [],
+					"metaName": "Error"
+				}
+			},
+			"metaMethod": "Execute"
+		},
+		"rest.2": {
+			"type": "nodehandler://@axway/api-builder-plugin-fn-restclient/rest",
+			"name": "getContactByEmail",
+			"method": "get",
+			"parameters": [
+				{
+					"name": "headers",
+					"type": "jsonpath",
+					"value": "$.getSFDCAcessTokenFlowResponse",
+					"metaName": "Headers",
+					"metaDescription": "The HTTP headers to set."
+				},
+				{
+					"name": "url",
+					"type": "jsonpath",
+					"value": "$.prepareGetContactsResult.url"
+				}
+			],
+			"outputs": {
+				"2xx": {
+					"routes": [
+						"http.1"
+					],
+					"context": "$.getContactByEmailResponse",
+					"metaName": "2XX"
+				},
+				"3xx": {
+					"routes": [],
+					"context": "$.response",
+					"metaName": "3XX"
+				},
+				"4xx": {
+					"routes": [],
+					"context": "$.response",
+					"metaName": "4XX"
+				},
+				"5xx": {
+					"routes": [],
+					"context": "$.response",
+					"metaName": "5XX"
+				},
+				"error": {
+					"routes": [],
+					"context": "$.error",
+					"metaName": "Error"
+				}
+			},
+			"metaMethod": "GET"
+		},
+		"http.1": {
+			"type": "nodehandler://axway-flow/http",
+			"name": "Set HTTP Response",
+			"method": "setresponse",
+			"parameters": [
+				{
+					"name": "status",
+					"type": "number",
+					"value": "200",
+					"metaName": "Status",
+					"metaDescription": "The HTTP status code"
+				},
+				{
+					"name": "body",
+					"type": "jsonpath",
+					"value": "$.getContactByEmailResponse"
+				}
+			],
+			"outputs": {
+				"next": {
+					"context": "$.response",
+					"routes": [],
+					"metaName": "Next"
+				}
+			},
+			"metaMethod": "Set HTTP Response"
+		},
+		"invoke-flow.1": {
+			"type": "nodehandler://@axway/api-builder-plugin-invoke-flow/invoke-flow",
+			"name": "Invoke Flow",
+			"method": "invokeFlow",
+			"parameters": [
+				{
+					"name": "id",
+					"type": "string",
+					"value": "\"getSFDCAcessToken\"",
+					"metaName": "Flow Listener ID",
+					"metaDescription": "The ID of a previously configured `Flow Listener`."
+				}
+			],
+			"outputs": {
+				"next": {
+					"routes": [
+						"javascript.2"
+					],
+					"context": "$.getSFDCAcessTokenFlowResponse",
+					"metaName": "Next"
+				},
+				"error": {
+					"routes": [],
+					"context": "$.error",
+					"metaName": "Error"
+				}
+			},
+			"metaMethod": "Invoke Flow"
+		}
+	}
+}

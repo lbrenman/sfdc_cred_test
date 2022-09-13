@@ -1,0 +1,216 @@
+{
+	"schemaVersion": "4",
+	"info": {
+		"name": "Salesforce AuthToken Flow",
+		"description": ""
+	},
+	"parameter": {
+		"properties": {
+			"request": {
+				"description": "The request"
+			},
+			"config": {
+				"type": "object",
+				"description": "The service's configuration"
+			},
+			"env": {
+				"type": "object",
+				"description": "The host OS environment"
+			}
+		},
+		"additionalProperties": false
+	},
+	"start": "javascript.1",
+	"nodes": {
+		"javascript.1": {
+			"type": "nodehandler://@axway/api-builder-plugin-fn-javascript/javascript",
+			"name": "Salesforce Auth",
+			"method": "Execute",
+			"parameters": [
+				{
+					"name": "code",
+					"type": "string",
+					"value": "\"let url = 'https://'+data.env.SFDC_DOMAIN_NAME+'.my.salesforce.com'+'/services/oauth2/token';\\n  \\n\\tlet headers = {\\n  \\t\\t'Content-Type': 'application/x-www-form-urlencoded'\\n\\t};\\n\\t\\n  \\tlet body = {\\n\\t\\t'grant_type': 'password',\\n\\t\\t'client_id': data.env.SFDC_CLIENT_ID,\\n\\t\\t'client_secret': data.env.SFDC_CLIENT_SECRET,\\n\\t\\t'username': data.env.SFDC_USERNAME,\\n\\t\\t'password': data.env.SFDC_PASSWORD+data.env.SFDC_SECRET\\n\\t};\\n  \\n \\treturn {url, headers, body};\"",
+					"metaName": "Code",
+					"metaDescription": "A JavaScript function body. Supports `await` and returning promises. `data` is the value of the Data parameter. `logger` is the API Builder logger. See the docs for more info: https://docs.axway.com/bundle/api-builder/page/docs/developer_guide/flows/flow_nodes/javascript_flow_node/index.html"
+				},
+				{
+					"name": "data",
+					"type": "jsonpath",
+					"value": "$",
+					"metaName": "Data",
+					"metaDescription": "The value to apply as the `data` argument of the JavaScript code. For objects and arrays, `data` is passed by reference."
+				}
+			],
+			"outputs": {
+				"next": {
+					"context": "$.prepareGetSfAccessTokenResult",
+					"routes": [
+						"rest.1"
+					],
+					"metaName": "Next"
+				},
+				"error": {
+					"context": "$.prepareGetSfAccessTokeError",
+					"routes": [
+						"invoke-flow-response.2"
+					],
+					"metaName": "Error"
+				}
+			},
+			"metaMethod": "Execute"
+		},
+		"rest.1": {
+			"type": "nodehandler://@axway/api-builder-plugin-fn-restclient/rest",
+			"name": "Salesforce Auth Token",
+			"method": "post",
+			"parameters": [
+				{
+					"name": "body",
+					"type": "jsonpath",
+					"value": "$.prepareGetSfAccessTokenResult.body",
+					"metaName": "Body",
+					"metaDescription": "The content to send."
+				},
+				{
+					"name": "url",
+					"type": "jsonpath",
+					"value": "$.prepareGetSfAccessTokenResult.url",
+					"metaName": "URL",
+					"metaDescription": "The target URL."
+				},
+				{
+					"name": "headers",
+					"type": "jsonpath",
+					"value": "$.prepareGetSfAccessTokenResult.headers",
+					"metaName": "Headers",
+					"metaDescription": "The HTTP headers to set."
+				}
+			],
+			"outputs": {
+				"2xx": {
+					"routes": [
+						"javascript.2"
+					],
+					"context": "$.getSfTokenResponse",
+					"metaName": "2XX"
+				},
+				"3xx": {
+					"routes": [
+						"invoke-flow-response.2"
+					],
+					"context": "$.getSfTokenError",
+					"metaName": "3XX"
+				},
+				"4xx": {
+					"routes": [
+						"invoke-flow-response.2"
+					],
+					"context": "$.getSfTokenError",
+					"metaName": "4XX"
+				},
+				"5xx": {
+					"routes": [
+						"invoke-flow-response.2"
+					],
+					"context": "$.getSfTokenError",
+					"metaName": "5XX"
+				},
+				"error": {
+					"routes": [
+						"invoke-flow-response.2"
+					],
+					"context": "$.getSfTokenError",
+					"metaName": "Error"
+				}
+			},
+			"metaMethod": "POST"
+		},
+		"invoke-flow-response.1": {
+			"type": "nodehandler://@axway/api-builder-plugin-invoke-flow/invoke-flow-response",
+			"name": "Set Response",
+			"method": "setResponse",
+			"parameters": [
+				{
+					"name": "data",
+					"type": "jsonpath",
+					"value": "$.constructHeaderResult"
+				}
+			],
+			"outputs": {
+				"next": {
+					"context": "$.response",
+					"routes": [],
+					"metaName": "Next"
+				},
+				"error": {
+					"context": "$.error",
+					"routes": [],
+					"metaName": "Error"
+				}
+			},
+			"metaMethod": "Set Response"
+		},
+		"invoke-flow-response.2": {
+			"type": "nodehandler://@axway/api-builder-plugin-invoke-flow/invoke-flow-response",
+			"name": "Set Response",
+			"method": "setResponse",
+			"parameters": [
+				{
+					"name": "isError",
+					"type": "boolean",
+					"value": "true",
+					"metaName": "Is Error",
+					"metaDescription": "Indicates that the response is an error.  This will cause the `Invoke Flow` to trigger the `Error` output with this value."
+				}
+			],
+			"outputs": {
+				"next": {
+					"context": "$.response",
+					"routes": [],
+					"metaName": "Next"
+				},
+				"error": {
+					"context": "$.error",
+					"routes": [],
+					"metaName": "Error"
+				}
+			},
+			"metaMethod": "Set Response"
+		},
+		"javascript.2": {
+			"type": "nodehandler://@axway/api-builder-plugin-fn-javascript/javascript",
+			"name": "constructHeader",
+			"method": "Execute",
+			"parameters": [
+				{
+					"name": "data",
+					"type": "jsonpath",
+					"value": "$",
+					"metaName": "Data",
+					"metaDescription": "The value to apply as the `data` argument of the JavaScript code. For objects and arrays, `data` is passed by reference."
+				},
+				{
+					"name": "code",
+					"type": "string",
+					"value": "\"let header = {\\n\\t\\t'Authorization': `Bearer ${data.getSfTokenResponse.body.access_token}`\\n\\t};\\n\\t\\n  \\treturn header;\""
+				}
+			],
+			"outputs": {
+				"next": {
+					"context": "$.constructHeaderResult",
+					"routes": [
+						"invoke-flow-response.1"
+					],
+					"metaName": "Next"
+				},
+				"error": {
+					"context": "$.error",
+					"routes": [],
+					"metaName": "Error"
+				}
+			},
+			"metaMethod": "Execute"
+		}
+	}
+}

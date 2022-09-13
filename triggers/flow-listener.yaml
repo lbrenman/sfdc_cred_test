@@ -1,0 +1,12 @@
+triggers:
+  flow-listener-1:
+    name: Flow Listener
+    parameters:
+      id: getSFDCAcessToken
+    enabled: true
+    invoke:
+      flow: SalesforceAuthToken
+      parameters:
+        request: $.request
+        config: $.config
+        env: $.env
