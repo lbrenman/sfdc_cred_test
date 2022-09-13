@@ -37,9 +37,7 @@
 				{
 					"name": "code",
 					"type": "string",
-					"value": "\"let url = `https://${data.env.SFDC_DOMAIN_NAME}.my.salesforce.com/services/data/v53.0/query?q=SELECT Id,FirstName,LastName FROM Contact`;\\n  \\n  \\t/*\\n\\tlet headers = {\\n\\t\\t'Authorization': `Bearer ${data.getSFDCAcessTokenFlowResponse}`\\n\\t};\\n    */\\n\\n\\treturn {url};\"",
-					"metaName": "Code",
-					"metaDescription": "A JavaScript function body. Supports `await` and returning promises. `data` is the value of the Data parameter. `logger` is the API Builder logger. See the docs for more info: https://docs.axway.com/bundle/api-builder/page/docs/developer_guide/flows/flow_nodes/javascript_flow_node/index.html"
+					"value": "\"let url = `https://${data.env.SFDC_DOMAIN_NAME}.my.salesforce.com/services/data/v53.0/query?q=SELECT Id,FirstName,LastName FROM Contact`;\\n\\treturn {url};\""
 				}
 			],
 			"outputs": {
@@ -73,7 +71,9 @@
 				{
 					"name": "url",
 					"type": "jsonpath",
-					"value": "$.prepareGetContactsResult.url"
+					"value": "$.prepareGetContactsResult.url",
+					"metaName": "URL",
+					"metaDescription": "The target URL."
 				}
 			],
 			"outputs": {
@@ -122,7 +122,9 @@
 				{
 					"name": "body",
 					"type": "jsonpath",
-					"value": "$.getContactByEmailResponse"
+					"value": "$.getContactByEmailResponse",
+					"metaName": "Body",
+					"metaDescription": "The response payload"
 				}
 			],
 			"outputs": {
